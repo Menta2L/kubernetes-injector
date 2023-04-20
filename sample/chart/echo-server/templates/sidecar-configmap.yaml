@@ -15,8 +15,6 @@ data:
             - file
             - --file-path
             - /app/haystack/agent.conf
-          ports:
-            - containerPort: 35000
           volumeMounts:
             - name: agent-conf
               mountPath: /app/haystack

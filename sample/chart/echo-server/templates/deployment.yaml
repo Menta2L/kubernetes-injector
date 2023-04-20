@@ -13,9 +13,10 @@ spec:
   template:
     metadata:
       annotations:
-        sidecar-injector.expedia.com/inject: "haystack-agent-sidecar"
-        sidecar-injector.expedia.com/config: "test-config"
-        sidecar-injector.expedia.com/some-api-key: "6feab492-fc9b-4c38-b50d-3791718c8203"
+        injector.server-lab.info/inject: "haystack-agent-sidecar"
+        injector.server-lab.info/config: "test-config"
+        injector.server-lab.info/some-api-key: "6feab492-fc9b-4c38-b50d-3791718c820322"
+        injector.server-lab.info/some-api-key-xxx: "6feab492-fc9b-4c38-b50d-3791718c820322"
       labels:
         app.kubernetes.io/name: {{ .Chart.Name }}
     spec:
@@ -24,6 +25,9 @@ spec:
         - name: echo-server
           image: hashicorp/http-echo:alpine
           imagePullPolicy: IfNotPresent
+          env:
+          - name: APP_ENV
+            value: "dev"
           args:
             - -listen=:8080
             - -text="hello world"

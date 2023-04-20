@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-CONTAINER_NAME=expediagroup/kubernetes-sidecar-injector
+CONTAINER_NAME=menta2l/k8-injector
 IMAGE_TAG?=$(shell git rev-parse HEAD)
 KIND_REPO?="kindest/node"
 KUBE_VERSION = v1.26.3
@@ -14,7 +14,7 @@ vet:
 	go vet ./...
 
 test:
-	go test ./...
+	go test ./... -v
 
 tidy:
 	go mod tidy
@@ -26,10 +26,10 @@ clean:
 	go clean
 
 build: clean vet lint
-	go build -o kubernetes-sidecar-injector
+	go build -o k8-injector  ./cmd/k8-injector/main.go
 
 release: clean vet lint
-	CGO_ENABLED=0 GOOS=linux go build -o kubernetes-sidecar-injector
+	CGO_ENABLED=0 GOOS=linux go build -o k8-injector  ./cmd/k8-injector/main.go
 
 docker:
 	docker build --no-cache -t ${CONTAINER_NAME}:${IMAGE_TAG} .

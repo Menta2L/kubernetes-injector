@@ -6,6 +6,6 @@ RUN make release
 
 FROM scratch
 WORKDIR /
-COPY --from=build /build/kubernetes-sidecar-injector /
+COPY --from=build /build/k8-injector /
 
-ENTRYPOINT ["/kubernetes-sidecar-injector"]
+ENTRYPOINT ["/k8-injector"]
