@@ -1,0 +1,61 @@
+{{ $tls := fromYaml ( include "webhook.gen-certs" . ) }}
+
+apiVersion: {{ include "common.capabilities.deployment.apiVersion" .}}
+kind: Deployment
+metadata:
+  name: {{ include "common.names.name" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: {{- include "common.labels.standard" . | nindent 6 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 6 }}
+    {{- end }}
+  template:
+    metadata:
+      annotations:
+        generated-cert: {{ sha256sum  (index $tls "tls.crt")  }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels: {{- include "common.labels.standard" . | nindent 8 }}
+              {{- if .Values.commonLabels }}
+                {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 8 }}
+              {{- end }}
+    spec:
+      serviceAccountName: {{ include "common.names.name" . }}
+      containers:
+        - name: webhook-injector
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - -port={{ .Values.webhook.port }}
+            - -tlsCertFile=/opt/kubernetes-injector/certs/tls.crt
+            - -tlsKeyFile=/opt/kubernetes-injector/certs/tls.key
+            - -injectPrefix={{ trimSuffix "/" .Values.webhook.injectPrefix }}
+            - -injectName={{ .Values.webhook.injectName }}
+            - -configName={{ .Values.webhook.configName }}
+            - -sidecarDataKey={{ .Values.webhook.dataKey }}
+          volumeMounts:
+            - name: {{ include "common.names.name" . }}-certs
+              mountPath: /opt/kubernetes-injector/certs
+              readOnly: true
+          ports:
+            - name: https
+              containerPort: {{ .Values.webhook.port }}
+              protocol: TCP
+        {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      imagePullSecrets:
+        {{- toYaml .Values.image.pullSecrets | nindent 8 }}
+      volumes:
+        - name: {{ include "common.names.name" . }}-certs
+          secret:
+            secretName: {{ include "common.names.name" . }}-certs

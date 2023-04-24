@@ -1,0 +1,59 @@
+{{ $tls := fromYaml ( include "webhook.gen-certs" . ) }}
+
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ include "common.names.name" . }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" ( dict "value" .Values.commonLabels "context" $ ) | nindent 4 }}
+    {{- end }}
+webhooks:
+  - name: kubernetes-injector.server-lab.info
+    clientConfig:
+      service:
+        name: {{ include "common.names.name" . }}
+        namespace: {{ .Release.Namespace | quote }}
+        path: "/mutate"
+      caBundle: {{ index $tls "ca.crt" }}
+    failurePolicy: Fail
+    sideEffects: None
+    admissionReviewVersions:
+      - v1
+    rules:
+      - apiGroups:
+          - ""
+        resources:
+          - pods
+        apiVersions:
+          - "*"
+        operations:
+          - CREATE
+        scope: Namespaced
+    namespaceSelector:
+      matchExpressions:
+        {{- with .Values.webhook.namespaceSelector.matchExpressions }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        - key: {{ .Values.webhook.injectPrefix }}/{{ .Values.webhook.disableInject }}
+          operator: NotIn
+          values:
+            - "true"
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - {{ .Release.Namespace }}
+    objectSelector:
+      {{- with .Values.webhook.objectSelector.matchLabels }}
+      matchLabels:
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      matchExpressions:
+        - key: {{ .Values.webhook.injectPrefix }}/{{ .Values.webhook.injectName }}
+          operator: NotIn
+          values:
+            - skip
+        - key: {{ .Values.webhook.injectPrefix }}/{{ .Values.webhook.disableInject }}
+          operator: NotIn
+          values:
+            - "true"

@@ -17,6 +17,7 @@ type Sidecar struct {
 	ImagePullSecrets []corev1.LocalObjectReference `yaml:"imagePullSecrets"`
 	Annotations      map[string]string             `yaml:"annotations"`
 	Labels           map[string]string             `yaml:"labels"`
+	VolumeMounts     []corev1.VolumeMount          `yaml:"vplumeMounts"`
 }
 
 func metaName(meta *metav1.ObjectMeta) string {
